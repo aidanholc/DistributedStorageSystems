@@ -9,11 +9,16 @@ class Main {
     public static void main(String[] args) {
         System.out.println("Starting main method...");
         // This is a simple Java program that prints "Hello, World!" to the console.
-        int[] tests = {1000, 5000, 10000, 50000, 100000, 500000};
-        for (int test : tests) {
-            long duration = test_write(test);
-            System.out.println("Time taken to write " + test + " keys: " + duration + " milliseconds");
-        } 
+        //int[] tests = {1000, 5000, 10000, 50000, 100000, 500000};
+        // for (int test : tests) {
+        //     long duration = test_write(test);
+        //     System.out.println("Time taken to write " + test + " keys: " + duration + " milliseconds");
+        // } 
+        long[] cachingDurations = test_caching();
+        System.out.println("Caching test durations (in nanoseconds):");
+        for (long duration : cachingDurations) {
+            System.out.print(duration + ", ");
+        }
 
         // for (int test : tests) {
         //     long duration = test_read(test);
@@ -50,5 +55,21 @@ class Main {
             durations[j] = duration;
         }
         return ((durations[0] / 3) + (durations[1] / 3) + (durations[2] / 3)) / 1_000_000; // average the durations and convert to milliseconds
+    }
+
+    public static long[] test_caching() {
+        BTree b = new BTree("caching_test.btree");
+        for (int i = 0; i < 1_000; i++) {
+            b.insert(i, i);
+        }
+        long[] durations = new long[10];
+        for (int i = 0; i < 10; i++) {
+            int key = (int) (Math.random() * 1_000);
+            long start = System.nanoTime();
+            b.get(key);
+            long end = System.nanoTime();
+            durations[i] = end - start;
+        }
+        return durations;
     }
 }
