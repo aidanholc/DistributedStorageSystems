@@ -22,6 +22,9 @@ public class ClientRunner {
 
         result = testBadRequest(false);
         System.out.println("testBadRequest: " + result);
+
+        result = testTransactionWrite(false);
+        System.out.println("testTransactionWrite: " + result);
         // BTree oneMillionBTree = new BTree("1mil.btree");
         // for (int i = 0; i < 1_000_000; i++) {
         //     oneMillionBTree.insert(i, i* 100);
@@ -29,6 +32,16 @@ public class ClientRunner {
         //         System.out.println(i);
         //     }
         // }
+    }
+
+    public static boolean testTransactionWrite(boolean debugt) {
+        Client client = new Client(port);
+        String response = client.sendMessage("BEGIN 1 2 ;");
+        System.out.println(response);
+        client.sendMessage("WRITE 1 42 ;");
+        response = client.sendMessage("READ 1 ;");
+        int int_response = Integer.parseInt(response);
+        return int_response == 42;
     }
 
     public static boolean testTransactionRead(boolean debug) {
