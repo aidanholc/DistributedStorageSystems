@@ -14,19 +14,21 @@ public class ClientRunner {
  *  **/
     private static final int port = 5460;
     public static void main(String[] args) {
-        // boolean result = testTransactionRead(true);
-        // System.out.println("testTransactionRead: " + result);
+        boolean result = testTransactionRead(true);
+        System.out.println("testTransactionRead: " + result);
 
-        // boolean result = testMultipleClientTransactionRead(true);
-        // System.out.println("testMultipleClientTransactionRead: " + result);
+        result = testMultipleClientTransactionRead(true);
+        System.out.println("testMultipleClientTransactionRead: " + result);
 
-        BTree oneMillionBTree = new BTree("1mil.btree");
-        for (int i = 0; i < 1_000_000; i++) {
-            oneMillionBTree.insert(i, i* 100);
-            if (i % 50_000 == 0) {
-                System.out.println(i);
-            }
-        }
+        result = testBadRequest(false);
+        System.out.println("testBadRequest: " + result);
+        // BTree oneMillionBTree = new BTree("1mil.btree");
+        // for (int i = 0; i < 1_000_000; i++) {
+        //     oneMillionBTree.insert(i, i* 100);
+        //     if (i % 50_000 == 0) {
+        //         System.out.println(i);
+        //     }
+        // }
     }
 
     public static boolean testTransactionRead(boolean debug) {
@@ -109,6 +111,28 @@ public class ClientRunner {
         client2.stop();
         client3.stop();
         if (debug) System.out.println("Finished aborting");
+        return finalResult;
+    }
+
+    public static boolean testBadRequest(boolean debug) {
+        Client client1 = new Client(port);
+        boolean finalResult = true;
+        try { 
+            client1.sendMessage("ABORT ;");
+        } catch(Exception e) {
+            finalResult = false;
+        }
+        client1.stop();
+
+        Client client2 = new Client(port);
+        try {
+            client2.sendMessage("BEGIN 1 2 3 ;");
+            client2.sendMessage("READ 2 ;");
+            client2.sendMessage("COMMIT ;");
+        } catch(Exception e) {
+            finalResult = false;
+        }
+        client2.stop();
         return finalResult;
     }
 }

@@ -40,6 +40,10 @@ public class ServerAdapter {
     }
 
     public Integer put(int transactionID, int key, int value, boolean isTransaction) {
+        if (!isTransaction && this.lockedKeys.contains(key)) {
+            throw new IllegalAccessError("Trying to alter a locked key"); 
+        }
+
         HashMap<Integer, Integer> buffer = getBuffer(transactionID);
         Integer return_val = buffer.put(key, value);
         if (return_val == null) {
@@ -51,12 +55,19 @@ public class ServerAdapter {
         if (!isTransaction) {
             this.wal.transaction(transactionID); // Write transaction info to the wal if this write is not part of a transaction
             this.commit(transactionID); // Commit the write immediately
-        }
+        } 
         this.wal.write(transactionID, key, value, return_val);
         return return_val;
     }
 
     public Integer get(int transactionID, int key) {
+        return this.get(transactionID, key, true);
+    }
+
+    public Integer get(int transactionID, int key, boolean isTransaction) {
+        if (!isTransaction && this.lockedKeys.contains(key)) {
+            throw new IllegalAccessError("trying to access a locked key");
+        }
         HashMap<Integer, Integer> buffer = getBuffer(transactionID);
         Integer return_val = buffer.get(key);
         if (return_val == null) {

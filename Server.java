@@ -108,27 +108,6 @@ public class Server {
                         this.cleanupTransaction(transactionID, key, clientChannel);
                         continue;
                     }
-                    // catch (java.net.SocketException e) {
-                    //     this.serverAdapter.abort(transactionID);
-                    //     System.out.println("CONNECTION INTERRUPTED, CHANNEL CLOSED");
-                    //     this.serverAdapter.abort(transactionID);
-                    //     this.timedOutTransactions.add(transactionID);
-                    //     clientChannel.close();
-                    //     continue;
-                    //}
-                    // boolean timedOut = (System.currentTimeMillis() - startTime) > TIMEOUT;
-                    // while(!timedOut && !this.bufferFull(buffer)) {
-                    //     clientChannel.read(buffer);
-                    //     timedOut = (System.currentTimeMillis() - startTime) > TIMEOUT;
-                    // }
-
-
-                    // Read request and seperate operation and arguments
-                    // int responseSize = clientChannel.read(buffer);
-                    // if (responseSize == -1) {
-                    //     continue;
-                    // }
-                    // String clientRequest = new String(buffer.array()).trim();
                     String clientRequest = new String(buffer.array(), 0, buffer.position()).trim();
                     System.out.println("Received request: " + clientRequest);
                     String operation = clientRequest.split(" ")[0];
@@ -179,8 +158,12 @@ public class Server {
                                 continue;
                             }
                             System.out.println("transaction Start time: + " + transactionStartTime);
-                            Integer return_val = this.serverAdapter.put(transactionID, arguments[0], arguments[1], attachments.get(1) != -1);
-                            this.writeToClient((return_val == null ? "null" : Integer.toString(return_val)), clientChannel, buffer, transactionID, key);
+                            try {
+                                Integer return_val = this.serverAdapter.put(transactionID, arguments[0], arguments[1], attachments.get(1) != -1);
+                                this.writeToClient((return_val == null ? "null" : Integer.toString(return_val)), clientChannel, buffer, transactionID, key);
+                            } catch (IllegalAccessError e) {
+                                this.writeToClient("Key Locked", clientChannel, buffer, transactionID, key);
+                            }
                         } break;
 
 
@@ -198,9 +181,13 @@ public class Server {
                                 System.out.println("timed out");
                                 continue;
                             }
-                            Integer return_val = this.serverAdapter.get(transactionID, arguments[0]);
-                            // System.out.println("return val: " + return_val);
-                            this.writeToClient((return_val == null ? "null" : return_val.toString()), clientChannel, buffer, transactionID, key);
+                            try {
+                                Integer return_val = this.serverAdapter.get(transactionID, arguments[0], attachments.get(1) != -1);
+                                // System.out.println("return val: " + return_val);
+                                this.writeToClient((return_val == null ? "null" : return_val.toString()), clientChannel, buffer, transactionID, key);
+                            } catch (IllegalAccessError e) {
+                                this.writeToClient("Key Locked", clientChannel, buffer, transactionID, key);
+                            }
                         } break;
 
 
