@@ -120,7 +120,7 @@ public class MultiClient {
         TreeMap<Integer, Integer> readCounts = new TreeMap<Integer, Integer>();
         long startTime = System.currentTimeMillis();
         int curQuorum = 0;
-        int acceptedValue = -1;
+        // int acceptedValue = -1;
 
         while (!timedOut) {
             int readyChannels = this.selector.select(1000);
@@ -198,15 +198,19 @@ public class MultiClient {
                     System.out.println("Caught Exception");
                     e.printStackTrace();
                 }
+                System.out.println(readCounts.size());
+                if (readCounts.size() != 1) {
+                    System.out.println(readCounts);
+                }
                 for(Map.Entry<Integer, Integer> entry: readCounts.entrySet()) {
                     int value = entry.getKey();
                     int count = entry.getValue();
                     if (count > curQuorum) {
                         curQuorum = count;
-                        acceptedValue = value;
+                        //acceptedValue = value; 
                     }
                     if (curQuorum >= quorum) {
-                        return acceptedValue; // return immediately if a quorum was reached.
+                        return value; // return immediately if a quorum was reached.
                     }
                 }
                 System.out.println("end of while loop");
