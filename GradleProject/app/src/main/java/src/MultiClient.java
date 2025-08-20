@@ -96,8 +96,11 @@ public class MultiClient {
 
             SelectionKey key = info.channel.keyFor(this.selector);
             if (key != null && key.isValid()) {
-                key.interestOps(key.interestOps() | SelectionKey.OP_WRITE); // Make sure the channel is actually writable
                 int bytesWritten = info.channel.write(info.buffer);
+                if (buffer.hasRemaining()) {
+                    System.out.println("Partial Write");
+                }
+                // key.interestOps(key.interestOps() | SelectionKey.OP_WRITE); // Make sure the channel is actually writable
                 info.waiting = true;
                 key.interestOps(SelectionKey.OP_READ); // Turn back to reading now that the data is written
                 if (bytesWritten != message.getBytes().length){
@@ -123,7 +126,7 @@ public class MultiClient {
         // int acceptedValue = -1;
 
         while (!timedOut) {
-            int readyChannels = this.selector.select(1000);
+            int readyChannels = this.selector.select(100);
             if (readyChannels == 0) {
                 long currentTime = System.currentTimeMillis();
                 timedOut = (currentTime - startTime) > timeout;
@@ -150,17 +153,19 @@ public class MultiClient {
 
                 try {
                     if (key.isReadable()) {
-                        ByteBuffer buffer = ByteBuffer.allocate(1024);
-                        int bytesRead = channel.read(buffer);
+                        // ByteBuffer buffer = ByteBuffer.allocate(1024);
+                        info.buffer.clear();
+                        int bytesRead = channel.read(info.buffer);
 
                         if (bytesRead > 0) {
-                            buffer.flip();
-                            String response = new String(buffer.array(), 0, buffer.remaining());
+                            info.buffer.flip();
+                            String response = new String(info.buffer.array(), 0, info.buffer.remaining());
                             info.response.append(response);
 
                             if (info.response.toString().endsWith(";")) { // full message sent
                                 response  = info.response.toString();
-                                info.response = new StringBuilder();
+                                info.response.setLength(0);
+                                //info.response = new StringBuilder();
                                 info.waiting = false;
 
                                 // Processe  Response
@@ -198,10 +203,6 @@ public class MultiClient {
                     System.out.println("Caught Exception");
                     e.printStackTrace();
                 }
-                System.out.println(readCounts.size());
-                if (readCounts.size() != 1) {
-                    System.out.println(readCounts);
-                }
                 for(Map.Entry<Integer, Integer> entry: readCounts.entrySet()) {
                     int value = entry.getKey();
                     int count = entry.getValue();
@@ -213,10 +214,9 @@ public class MultiClient {
                         return value; // return immediately if a quorum was reached.
                     }
                 }
-                System.out.println("end of while loop");
-
             }
         }
+        System.out.println("Timed out :(");
         // If no quorum was reached, return a signal to show that.
         return Integer.MAX_VALUE;
     }
